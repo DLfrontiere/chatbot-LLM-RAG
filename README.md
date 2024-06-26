@@ -14,13 +14,20 @@ In particular in this repository is possible to:
 - Load different urls to be retrieved (variable inside code)
 - Choose a model (--model ),for now supported open ai,groq and claude models,specify the api keys in api_key.env file
 - Choose if summarize everything using the chosen model using --pre_summarize
-- Choose an embedding model --embedding hugging face,opeai and fast
+- Choose an embedding model --embeddings hugging face,opeai and fast
 - Chroma is used for vector storing //
   
 - Choose a retriever using --retriever between base retreiever,parent document retriever and three type of ContextualCompressionRetriever(compressor,extractor,filter)
 - The chatbot is chat history aware
 
-  #Possible improvements
+# Usage  Example
+
+python3 main.py --model openai --embeddings fast --retriever parent --files_path ./your_files_dir --pre_summarize False
+
+A link will be generated to use a gui to interact wiht the chatbot
+
+
+# Possible improvements
   
  other files can be used(images)? (images can also be etracted from the files like PDF) enable files upload for each user? store files in local or cloud? saving the loaded files for each user/chat?
 
@@ -31,8 +38,3 @@ local or cloud database? store every chat history?
  self evaluation?refine on top chunks? hierarchical summarization of context?multiple query generation with re-ranking?
 
  Multi agent approach?
-
- 
-
-
-
