@@ -19,6 +19,7 @@ In particular in this repository is possible to:
   
 - Choose a retriever using --retriever between base retreiever,parent document retriever and three type of ContextualCompressionRetriever(compressor,extractor,filter)
 - The chatbot is chat history aware
+<<<<<<< HEAD
 
 # Usage  Example
 
@@ -38,4 +39,24 @@ local or cloud database? store every chat history?
  self evaluation?refine on top chunks? hierarchical summarization of context?multiple query generation with re-ranking?
 
  Multi agent approach?
+=======
+>>>>>>> 8ce54ef9835a80457a3bacb297f35bbb26ada538
 
+# Usage  Example
+
+python3 main.py --model openai --embeddings fast --retriever parent --files_path ./your_files_dir --pre_summarize False
+
+A link will be generated to use a gui to interact wiht the chatbot
+
+
+# Possible improvements
+  
+ other files can be used(images)? (images can also be etracted from the files like PDF) enable files upload for each user? store files in local or cloud? saving the loaded files for each user/chat?
+
+local or cloud database? store every chat history?
+
+ free/opensource models?fine tuning?efficiency?speed?cost? model able to read images?mobel able to generate images/tables/code?
+
+ self evaluation?refine on top chunks? hierarchical summarization of context?multiple query generation with re-ranking?
+
+ Multi agent approach?
