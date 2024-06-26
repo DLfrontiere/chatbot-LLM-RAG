@@ -19,7 +19,7 @@ In particular in this repository is possible to:
   
 - Choose a retriever using --retriever between base retreiever,parent document retriever and three type of ContextualCompressionRetriever(compressor,extractor,filter)
 - The chatbot is chat history aware
-<<<<<<< HEAD
+
 
 # Usage  Example
 
