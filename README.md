@@ -38,9 +38,8 @@ local or cloud database? store every chat history?
 
  self evaluation?refine on top chunks? hierarchical summarization of context?multiple query generation with re-ranking?
 
- Multi agent approach?
-=======
->>>>>>> 8ce54ef9835a80457a3bacb297f35bbb26ada538
+Multi agent approach?
+
 
 # Usage  Example
 
