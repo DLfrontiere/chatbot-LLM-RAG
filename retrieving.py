@@ -16,21 +16,21 @@ import uuid
 
 class Retriever:
 
-    def __init__(self, docs, embedding_function, splitter=RecursiveCharacterTextSplitter(chunk_size=200, chunk_overlap=25, add_start_index=True)):
+    def __init__(self, docs, embedding_function, splitter=RecursiveCharacterTextSplitter(chunk_size=200, chunk_overlap=20, add_start_index=True)):
         self.docs = docs
         self.embedding_function = embedding_function
         self.splitter = splitter
 
     def get_retriever(self):
         texts = self.splitter.split_documents(self.docs)
-        db = Chroma.from_documents(self.docs, self.embedding_function)
+        db = Chroma.from_documents(texts, self.embedding_function)
         #retriever = db.as_retriever(search_type="similarity_score_threshold",search_kwargs={'score_threshold': 0.3})
-        retriever = db.as_retriever(search_type="similarity",search_kwargs={'k': 3})
+        retriever = db.as_retriever(search_type="similarity",search_kwargs={'k': 5})
         return retriever
 
 class ParentRetriever:
 
-    def __init__(self, docs, vectorstore, parent_splitter=RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=125, add_start_index=True), child_splitter=RecursiveCharacterTextSplitter(chunk_size=100, chunk_overlap=25, add_start_index=True)):
+    def __init__(self, docs, vectorstore, parent_splitter=RecursiveCharacterTextSplitter(chunk_size=300, chunk_overlap=75, add_start_index=True), child_splitter=RecursiveCharacterTextSplitter(chunk_size=60, chunk_overlap=15, add_start_index=True)):
         self.docs = docs
         self.vectorstore = vectorstore
         self.child_splitter = parent_splitter

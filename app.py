@@ -6,8 +6,8 @@ from langchain.chains import RetrievalQA
 from langchain_community.chat_models import ChatOpenAI
 import os
 import tempfile
-from loading_ds import Loader
-from Embedding import EmbeddingModel
+from loading import Loader
+from embedding import EmbeddingModel
 from langchain_community.document_loaders import PyPDFLoader
 from answer_generation import AnswerGenerator
 from dotenv import load_dotenv, find_dotenv
@@ -22,6 +22,7 @@ api_key = st.text_input("Enter your OpenAI API Key:", type="password")
 if api_key:
     os.environ["OPENAI_API_KEY"] = api_key
 
+accepted_files = ["pdf", "txt", "html","docx","doc"]
 
 # Cached function to create a vectordb for the provided PDF files
 
@@ -35,7 +36,7 @@ def files_to_docs(files):
                 f.write(file.getbuffer())
             
         loader = Loader(temp_dir)
-        docs = loader.load_documents()
+        docs = loader.load_documents(accepted_files)
         #docs = loader.summarize_docs(docs)
     
     return docs
@@ -47,7 +48,7 @@ def answer_gen(_docs):
     st.session_state['answer_generator'] = AnswerGenerator(EmbeddingModel(_docs).get_parent_retriever())
 
 
-files = st.file_uploader("", type= ["pdf","doc","docx","txt","word"], accept_multiple_files=True)
+files = st.file_uploader("", type= accepted_files, accept_multiple_files=True)
 
 if files:
     # Convert uploaded files to a list of file names and their sizes

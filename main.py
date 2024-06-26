@@ -10,7 +10,7 @@ from document_processing import DocumentProcessor
 from pathlib import Path
 from models import OpenAIModel, GroqModel, ClaudeModel
 
-load_dotenv(Path("./api_key.env"))
+load_dotenv(Path("../api_key.env"))
 
 def main():
     parser = argparse.ArgumentParser(description="Choose model, embeddings, retriever, and other options.")
@@ -23,7 +23,7 @@ def main():
     args = parser.parse_args()
 
     files_path = args.files_path
-    accepted_files = ["pdf", "txt", "html"]
+    accepted_files = ["pdf", "txt", "html","docx","doc"]
     urls = ["https://ainews.it/synthesia-creazione-di-avatar-ai-anche-da-mobile/"]
 
     # Choose model
