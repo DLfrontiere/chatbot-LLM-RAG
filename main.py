@@ -65,6 +65,7 @@ def main():
     vector_store_chunks.create_vector_store(args.vectorstore, embedding_function)
     vectorstore_chunnks = vector_store_chunks.get_vector_store()
 
+    #create an other vectorstore on docs to pass to parent retriever
 
     # Choose retriever
     if args.retriever == 'base':

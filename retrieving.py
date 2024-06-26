@@ -8,6 +8,7 @@ from langchain.retrievers.document_compressors import LLMChainFilter
 from langchain_qdrant import Qdrant
 
 
+#check compliance between base retriever and compression retrievers
 class BaseRetriever:
 
     def __init__(self,vectorstore):
