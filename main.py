@@ -37,7 +37,6 @@ def main():
     loader = Loader(files_path)
     docs_urls = loader.load_urls(urls)
     docs = loader.load_documents(accepted_files)
-    print(docs)
     docs.extend(docs_urls)
 
     # Optionally pre-summarize documents

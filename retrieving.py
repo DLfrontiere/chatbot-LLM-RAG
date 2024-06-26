@@ -24,7 +24,8 @@ class Retriever:
     def get_retriever(self):
         texts = self.splitter.split_documents(self.docs)
         db = Chroma.from_documents(self.docs, self.embedding_function)
-        retriever = db.as_retriever()
+        #retriever = db.as_retriever(search_type="similarity_score_threshold",search_kwargs={'score_threshold': 0.3})
+        retriever = db.as_retriever(search_type="similarity",search_kwargs={'k': 3})
         return retriever
 
 class ParentRetriever:
@@ -57,7 +58,7 @@ class CompressionExtractorRetriever:
     def get_compression_retriever(self):
         llm = self.model
         compressor = LLMChainExtractor.from_llm(llm)
-        self.retriever = compression_retriever = ContextualCompressionRetriever(
+        self.retriever = ContextualCompressionRetriever(
             base_compressor=compressor, base_retriever=self.base_retriever
         )
         return self.retriever
