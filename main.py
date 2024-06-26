@@ -4,11 +4,12 @@ from embedding import EmbeddingModel
 from retrieving import Retriever, ParentRetriever, CompressionExtractorRetriever, CompressionFilterRetriever, CompressionEmbeddingRetriever
 from answer_generation import AnswerGenerator
 from gui import GUI
-import os
 from dotenv import load_dotenv
 from document_processing import DocumentProcessor
 from pathlib import Path
 from models import OpenAIModel, GroqModel, ClaudeModel
+from vectorstore import VectorStore
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 load_dotenv(Path("../api_key.env"))
 
@@ -19,6 +20,7 @@ def main():
     parser.add_argument('--retriever', choices=['base', 'parent', 'comp_extract', 'comp_filter', 'comp_emb'], default='comp_emb', help="Choose the retriever to use (default: comp_emb).")
     parser.add_argument('--files_path', type=str, required=True, help="Path to the directory containing files to be retrieved.")
     parser.add_argument('--pre_summarize', action='store_true', help="Whether to pre-summarize the documents (default: False).")
+    parser.add_argument('--vectorstore', choices=['chroma', 'qdrant'], default='qdrant', help="Choose the vector store to use (default: qdrant).")
     
     args = parser.parse_args()
 
@@ -54,14 +56,21 @@ def main():
     elif args.embeddings == 'fast':
         embedding_function = embedding_model.fast_embed_embeddings()
 
-    embedding_model.create_vector_store(docs, embedding_function)
-    vectorstore = embedding_model.get_vector_store()
+    splitter = RecursiveCharacterTextSplitter(chunk_size=200, chunk_overlap=20, add_start_index=True)
+    #parent_splitter =  RecursiveCharacterTextSplitter(chunk_size=200, chunk_overlap=20, add_start_index=True)
+    #child_splitter =  RecursiveCharacterTextSplitter(chunk_size=200, chunk_overlap=20, add_start_index=True)
+    chunks = splitter.split_documents(docs)
+    # Initialize the vector store based on the chosen option
+    vector_store_chunks = VectorStore(chunks)
+    vector_store_chunks.create_vector_store(args.vectorstore, embedding_function)
+    vectorstore_chunnks = vector_store_chunks.get_vector_store()
+
 
     # Choose retriever
     if args.retriever == 'base':
-        chosen_retriever = Retriever(docs, embedding_function).get_retriever()
+        chosen_retriever = Retriever(vectorstore).get_retriever()
     elif args.retriever == 'parent':
-        chosen_retriever = ParentRetriever(docs, vectorstore).get_retriever()
+        chosen_retriever = ParentRetriever(docs, vectorstore_docs).get_retriever()
     elif args.retriever == 'comp_extract':
         base_retriever = Retriever(docs, embedding_function).get_retriever()
         chosen_retriever = CompressionExtractorRetriever(base_retriever, model).get_retriever()

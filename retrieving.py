@@ -4,30 +4,19 @@ from langchain.retrievers import ParentDocumentRetriever, ContextualCompressionR
 from langchain.retrievers.document_compressors import LLMChainExtractor, EmbeddingsFilter
 from langchain_chroma import Chroma
 from langchain.storage import InMemoryStore
-from langchain_community.embeddings import HuggingFaceBgeEmbeddings
-from langchain_community.vectorstores import FAISS
-from langchain.retrievers.multi_vector import MultiVectorRetriever
-from langchain.storage import InMemoryByteStore
-from langchain_openai import OpenAI, OpenAIEmbeddings
 from langchain.retrievers.document_compressors import LLMChainFilter
-from langchain_core.embeddings.embeddings import Embeddings
+from langchain_qdrant import Qdrant
 
-import uuid
 
-class Retriever:
+class BaseRetriever:
 
-    def __init__(self, docs, embedding_function, splitter=RecursiveCharacterTextSplitter(chunk_size=200, chunk_overlap=20, add_start_index=True)):
-        self.docs = docs
-        self.embedding_function = embedding_function
-        self.splitter = splitter
+    def __init__(self,vectorstore):
+        self.vectorstore = vectorstore
 
     def get_retriever(self):
-        texts = self.splitter.split_documents(self.docs)
-        db = Chroma.from_documents(texts, self.embedding_function)
-        #retriever = db.as_retriever(search_type="similarity_score_threshold",search_kwargs={'score_threshold': 0.3})
-        retriever = db.as_retriever(search_type="similarity",search_kwargs={'k': 5})
+        retriever = self.vectorstore.as_retriever(search_type="similarity", search_kwargs={'k': 5})
         return retriever
-
+    
 class ParentRetriever:
 
     def __init__(self, docs, vectorstore, parent_splitter=RecursiveCharacterTextSplitter(chunk_size=300, chunk_overlap=75, add_start_index=True), child_splitter=RecursiveCharacterTextSplitter(chunk_size=60, chunk_overlap=15, add_start_index=True)):
