@@ -1,11 +1,11 @@
 import os
 import pandas as pd
 
-def create_or_update_csv(prompt, answer, context, answer_time, model_name, embeddings, retriever, pre_summarize, vectorstore, csv_file="./chat_history.csv"):
+def create_or_update_csv(prompt, answer,groundtruth,context, answer_time, model_name, embeddings, retriever, pre_summarize, vectorstore, csv_file="./chat_history.csv"):
     # Check if the CSV file exists
     if not os.path.exists(csv_file):
         # Create a new DataFrame and save it as a new CSV file
-        df = pd.DataFrame(columns=['prompt', 'answer', 'context', 'model', 'answer_time', 'embeddings', 'retriever', 'pre_summarize', 'vectorstore'])
+        df = pd.DataFrame(columns=['prompt', 'answer','groundtruth','context', 'model', 'answer_time', 'embeddings', 'retriever', 'pre_summarize', 'vectorstore'])
         df.to_csv(csv_file, index=False)
 
     # Load the existing CSV file
@@ -18,6 +18,7 @@ def create_or_update_csv(prompt, answer, context, answer_time, model_name, embed
     new_data = pd.DataFrame([{
         'prompt': prompt,
         'answer': answer,
+        'groundtruth':groundtruth,
         'context': unique_context,
         'model': model_name,
         'answer_time': answer_time,
