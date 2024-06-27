@@ -1,4 +1,7 @@
 import argparse
+import argparse
+import os
+import time
 from loading import Loader
 from embedding import EmbeddingModel
 from retrieving import BaseRetriever, ParentRetriever, CompressionExtractorRetriever, CompressionFilterRetriever, CompressionEmbeddingRetriever
@@ -10,11 +13,12 @@ from pathlib import Path
 from models import OpenAIModel, GroqModel, ClaudeModel
 from vectorstore import VectorStore
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from utils import create_or_update_csv
-import time
+from utils import create_or_update_csv,load_object,save_object
 
 load_dotenv(Path("../api_key.env"))
 
+
+    
 def main():
     parser = argparse.ArgumentParser(description="Choose model, embeddings, retriever, and other options.")
     parser.add_argument('--model', choices=['openai', 'groq', 'claude'], default='openai', help="Choose the model to use (default: openai).")
@@ -58,10 +62,40 @@ def main():
         model = ClaudeModel(model_name=model_name)
         llm = model.get_model()
 
-    loader = Loader(files_path)
-    docs_urls = loader.load_urls(urls)
-    docs = loader.load_documents(accepted_files)
-    docs.extend(docs_urls)
+    company_path = "../ALL_FILES/COMPANY"
+    user_path = "../ALL_FILES/USERS/User1"
+    files_paths = [company_path,user_path]
+    #loader = Loader(files_path)
+    #docs_urls = loader.load_urls(urls)
+    #docs = loader.load_documents(accepted_files)
+    #docs.extend(docs_urls)
+
+
+    ###
+    # Define file paths for saved objects
+    docs_file = f"./docs_{os.path.basename(files_path)}.pkl"
+    vectorstore_chunks_file = f"./{args.vectorstore}_chunks_{args.embeddings}.pkl"
+    vectorstore_docs_file = f"./{args.vectorstore}_docs_{args.embeddings}.pkl"
+    ###
+
+    ###
+    # Time the docs loading section
+    if os.path.exists(docs_file):
+        start_docs_time = time.time()
+        docs = load_object(docs_file)
+        end_docs_time = time.time()
+        print(f"Loaded saved docs in {round(end_docs_time - start_docs_time, 3)} seconds")
+    else:
+        start_docs_time = time.time()
+        loader = Loader(files_path)
+        docs_urls = loader.load_urls(urls)
+        docs = loader.load_documents(accepted_files)
+        docs.extend(docs_urls)
+        end_docs_time = time.time()
+        save_object(docs, docs_file)
+        print(f"Time taken to create docs: {round(end_docs_time - start_docs_time, 3)} seconds")
+    ###
+
 
     # Optionally pre-summarize documents
     if args.pre_summarize:
@@ -83,14 +117,16 @@ def main():
     child_splitter = base_splitter
     chunks = base_splitter.split_documents(docs)
     
-    # Initialize the vector store based on the chosen option
     vector_store_chunks = VectorStore(chunks)
     vector_store_chunks.create_vector_store(args.vectorstore, embedding_function)
     vectorstore_chunks = vector_store_chunks.get_vector_store()
 
+
     vector_store_docs = VectorStore(docs)
     vector_store_docs.create_vector_store(args.vectorstore, embedding_function)
     vectorstore_docs = vector_store_docs.get_vector_store()
+
+
 
     # Choose retriever
     if args.retriever == 'base':

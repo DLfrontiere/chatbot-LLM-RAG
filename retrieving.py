@@ -75,10 +75,8 @@ class CompressionFilterRetriever:
 
 class CompressionEmbeddingRetriever:
 
-    def __init__(self, base_retriever,docs,embedding_function):
+    def __init__(self, base_retriever,embedding_function):
         self.embedding_function = embedding_function
-        self.db = Chroma.from_documents(docs,self.embedding_function)
-        self.embeddings = self.embedding_function.embed_documents([d.page_content for d in docs])
         self.base_retriever = base_retriever
 
     def get_compression_embedding_retriever(self):

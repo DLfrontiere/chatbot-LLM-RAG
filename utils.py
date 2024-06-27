@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import pickle
 
 def create_or_update_csv(prompt, answer,groundtruth,context, answer_time, model_name, embeddings, retriever, pre_summarize, vectorstore, csv_file="./chat_history.csv"):
     # Check if the CSV file exists
@@ -33,3 +34,11 @@ def create_or_update_csv(prompt, answer,groundtruth,context, answer_time, model_
 
     # Save the updated DataFrame back to the CSV file
     df.to_csv(csv_file, index=False)
+
+def save_object(obj, filename):
+    with open(filename, 'wb') as file:
+        pickle.dump(obj, file)
+
+def load_object(filename):
+    with open(filename, 'rb') as file:
+        return pickle.load(file)

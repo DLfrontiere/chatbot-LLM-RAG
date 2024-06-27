@@ -9,17 +9,19 @@ from tqdm import tqdm
 #pre_summarizes = [True, False]
 #vectorstores = ["chroma", "qdrant"]
 
+# Define lists for each argument
 models = ["openai", "groq", "claude"]
 embeddings = []
-retrievers = ["parent","comp_emb"]
-#pre_summarizes = [True, False]
+retrievers = []#["parent", "comp_emb"]
+pre_summarizes = []
 vectorstores = ["chroma", "qdrant"]
 
 # Define additional models for openai
-additional_openai_models = ["gpt-4-turbo", "gpt-4o"]
+additional_models = {"openai": ["gpt-3.5-turbo", "gpt-4-turbo", "gpt-4o"], "groq": [], "claude": []}
 
 # Define default values
 default_model = "openai"
+default_model_name = {"openai": "gpt-3.5-turbo", "groq": "llama3-70b-8192", "claude": "claude-3-sonnet-20240229"}
 default_embedding = "fast"
 default_retriever = "comp_emb"
 default_pre_summarize = False
@@ -55,8 +57,8 @@ def run_command(model, model_name, embedding, retriever, pre_summarize, vectorst
 # Run the command for each combination with progress bar
 for combination in tqdm(combinations, desc="Running combinations", unit="combination"):
     model, embedding, retriever, pre_summarize, vectorstore = combination
-    if model == "openai":
-        for model_name in additional_openai_models:
-            run_command(model, model_name, embedding, retriever, pre_summarize, vectorstore)
-    else:
-        run_command(model, model, embedding, retriever, pre_summarize, vectorstore)
+    all_model_names = [default_model_name[model]] + additional_models[model]
+    for model_name in all_model_names:
+        tqdm.write(f"Running combination: model={model}, model_name={model_name}, embedding={embedding}, retriever={retriever}, pre_summarize={pre_summarize}, vectorstore={vectorstore}")
+        run_command(model, model_name, embedding, retriever, pre_summarize, vectorstore)
+
