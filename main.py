@@ -17,36 +17,39 @@ from utils import create_or_update_csv,load_object,save_object
 
 load_dotenv(Path("../api_key.env"))
 
-
     
 def main():
     parser = argparse.ArgumentParser(description="Choose model, embeddings, retriever, and other options.")
-    parser.add_argument('--model', choices=['openai', 'groq', 'claude'], default='openai', help="Choose the model to use (default: openai).")
+    parser.add_argument('--model', choices=['openai', 'groq', 'claude'], default='claude', help="Choose the model to use (default: openai).")
     
     # Parse known args first to determine the model
     known_args, remaining_args = parser.parse_known_args()
-
-        # Set default values based on the known_args
+    
+    # Set default values based on the known_args
     if known_args.model == 'openai':
         default_model_name = 'gpt-3.5-turbo'
     elif known_args.model == 'groq':
         default_model_name = 'llama3-70b-8192'
     elif known_args.model == 'claude':
         default_model_name = 'claude-3-sonnet-20240229'
+
     
+    # Add remaining arguments and set the default value for model_name based on known_args
     parser.add_argument('--embeddings', choices=['openai', 'hugging', 'fast'], default='fast', help="Choose the embeddings to use.")
     parser.add_argument('--retriever', choices=['base', 'parent', 'comp_extract', 'comp_filter', 'comp_emb'], default='parent', help="Choose the retriever to use.")
     parser.add_argument('--files_path', type=str, required=True, help="Path to the directory containing files to be retrieved.")
-    parser.add_argument('--pre_summarize', action='store_true', help="Whether to pre-summarize the documents (default: False).")
+    parser.add_argument('--pre_summarize', action='store_true', default=False, help="Whether to pre-summarize the documents (default: False).")
     parser.add_argument('--vectorstore', choices=['chroma', 'qdrant'], default='qdrant', help="Choose the vector store to use (default: qdrant).")
     parser.add_argument('--model_name', type=str, default=default_model_name, help="Model name based on the chosen model.")
 
     # Parse all args including the remaining args
     args = parser.parse_args(remaining_args)
+    args.model = known_args.model
 
     files_path = args.files_path
     accepted_files = ["pdf", "txt", "html","docx","doc"]
     urls = ["https://ainews.it/synthesia-creazione-di-avatar-ai-anche-da-mobile/"]
+
 
     # Choose model
     model_name = args.model_name
@@ -62,9 +65,9 @@ def main():
         model = ClaudeModel(model_name=model_name)
         llm = model.get_model()
 
-    company_path = "../ALL_FILES/COMPANY"
-    user_path = "../ALL_FILES/USERS/User1"
-    files_paths = [company_path,user_path]
+    #company_path = "../ALL_FILES/COMPANY"
+    #user_path = "../ALL_FILES/USERS/User1"
+    #files_paths = [company_path,user_path]
     #loader = Loader(files_path)
     #docs_urls = loader.load_urls(urls)
     #docs = loader.load_documents(accepted_files)
@@ -101,9 +104,10 @@ def main():
     if args.pre_summarize:
         doc_processing = DocumentProcessor(docs, llm)
         docs = doc_processing.summarize_docs(docs)
-
+    print(llm)
     embedding_model = EmbeddingModel(docs)
 
+    print(llm)
     # Choose embedding function
     if args.embeddings == 'openai':
         embedding_function = embedding_model.open_ai_embeddings()
@@ -111,6 +115,7 @@ def main():
         embedding_function = embedding_model.hugging_face_bge_embeddings()
     elif args.embeddings == 'fast':
         embedding_function = embedding_model.fast_embed_embeddings()
+    print(llm)
 
     base_splitter = RecursiveCharacterTextSplitter(chunk_size=200, chunk_overlap=20, add_start_index=True)
     parent_splitter =  RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=80, add_start_index=True)
@@ -150,15 +155,16 @@ def main():
     prompts = ["what is nvidia culitho?","what's the washing machine name?","how much is claude 3.5 sonnet plan?","why Nvidia don't use org-charts?","what not to do to move the washing machine?","what's the next step in the broader vision of Claude.ai?"]
     groundthruts = ["NVIDIA cuLitho,a new library that supercharges computational lithography, an immensec omputational workload in chip design and manufacturing.","the washing machine name is Dyson Contrarotator","Claude 3.5 Sonnet is now available for free on Claude.ai and the Claude iOS app, while Claude Pro and Team plan subscribers can access it with significantly higher rate limits. It is also available via the Anthropic API, Amazon Bedrock, and Google Cloud’s Vertex AI. The model costs $3 per million input tokens and $15 per million output tokens, with a 200K token context window.","Nvidia doesn't use org-charts because they believe the mission is the boss","Do not push the washing machine with your foot","Claude.ai next step is to expand to support team collaboration"]
 
+	    
     for i,prompt in enumerate(prompts):
-        print("Answering: ",prompt)
+        #print("Answering: ",prompt)
         groundtruth = groundthruts[i]
         context = answer_generator.get_current_context(prompt)
         start_time = time.time()  # Start the timer
         answer = answer_generator.answer_prompt(prompt)
         answer_time = round ( time.time() - start_time , 3)  # Calculate answer time
         create_or_update_csv(prompt, answer,groundtruth, context,answer_time, model_name, args.embeddings, args.retriever, args.pre_summarize, args.vectorstore, csv_file="./model_test.csv")
-        print("chatbot: ",answer)
+        #print("chatbot: ",answer)
 
 
     

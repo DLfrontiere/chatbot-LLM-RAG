@@ -11,13 +11,13 @@ from tqdm import tqdm
 
 # Define lists for each argument
 models = ["openai", "groq", "claude"]
-embeddings = []
-retrievers = []#["parent", "comp_emb"]
+embeddings = ["openai"]
+retrievers = ["parent", "comp_emb"]
 pre_summarizes = []
 vectorstores = ["chroma", "qdrant"]
 
 # Define additional models for openai
-additional_models = {"openai": ["gpt-3.5-turbo", "gpt-4-turbo", "gpt-4o"], "groq": [], "claude": []}
+additional_models = {"openai": ["gpt-4-turbo", "gpt-4o"], "groq": [], "claude": []}
 
 # Define default values
 default_model = "openai"
@@ -38,6 +38,7 @@ vectorstores = vectorstores or [default_vectorstore]
 combinations = list(itertools.product(models, embeddings, retrievers, pre_summarizes, vectorstores))
 
 def run_command(model, model_name, embedding, retriever, pre_summarize, vectorstore):
+    
     command = [
         "python3", "main.py",
         "--files_path", "../FILES",
@@ -47,9 +48,14 @@ def run_command(model, model_name, embedding, retriever, pre_summarize, vectorst
         "--retriever", retriever,
         "--vectorstore", vectorstore
     ]
+    
     if pre_summarize:
         command.append("--pre_summarize")
+
+    print("Running command: ",command)
+
     result = subprocess.run(command, capture_output=True, text=True)
+
     print(f"Output for model {model}, model_name {model_name}, embedding {embedding}, retriever {retriever}, pre_summarize {pre_summarize}, vectorstore {vectorstore}:\n{result.stdout}")
     if result.stderr:
         print(f"Error for model {model}, model_name {model_name}, embedding {embedding}, retriever {retriever}, pre_summarize {pre_summarize}, vectorstore {vectorstore}:\n{result.stderr}")

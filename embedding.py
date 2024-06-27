@@ -18,7 +18,7 @@ class EmbeddingModel:
         return sentence_transformer_ef
 
     def fast_embed_embeddings(self, model_name="BAAI/bge-small-en-v1.5"):
-        embeddings = FastEmbedEmbeddings()
+        embeddings = FastEmbedEmbeddings(model_name=model_name)
         return embeddings
 
     def open_ai_embeddings(self, model_name="text-embedding-ada-002"):
