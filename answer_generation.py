@@ -1,13 +1,11 @@
 import os
-import getpass
-from langchain_openai import ChatOpenAI
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains import create_history_aware_retriever, create_retrieval_chain
-from langchain_core.prompts import ChatPromptTemplate, PromptTemplate, MessagesPlaceholder
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_community.chat_message_histories import ChatMessageHistory
-from langchain_groq import ChatGroq
+import pandas as pd
 
 class AnswerGenerator():
 
@@ -17,6 +15,7 @@ class AnswerGenerator():
         self.store = {}
         self.context_store = {}  # Store the context used for each session
         self.rag_chain = self.create_rag_chain()
+        self.csv_file = './chat_history.csv'
 
     def get_store(self):
         return self.store
@@ -79,14 +78,15 @@ class AnswerGenerator():
         return conversational_rag_chain
 
     def answer_prompt(self, user_prompt, session_id="123"):
-        user_prompt = user_prompt.lower()
-        context = self.get_current_context(user_prompt)
+        lower_user_prompt = user_prompt.lower()
+        context = self.get_current_context(lower_user_prompt)
         self.context_store[session_id] = context  # Store the context used
-        dict_answer = self.rag_chain.invoke({"input":user_prompt}, config={"configurable": {"session_id": session_id}})
-        return dict_answer['answer']
+        dict_answer = self.rag_chain.invoke({"input": lower_user_prompt}, config={"configurable": {"session_id": session_id}})
+        answer = dict_answer['answer']
+        return answer
+    
 
     def get_current_context(self, prompt):
-        # Assuming the retriever can be called to get the current context for the session
         context = self.retriever.invoke(prompt)
         return context
 
