@@ -24,4 +24,3 @@ class EmbeddingModel:
     def open_ai_embeddings(self, model_name="text-embedding-ada-002"):
         openai = OpenAIEmbeddings(model=model_name)
         return openai
-
