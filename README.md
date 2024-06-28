@@ -12,12 +12,13 @@ In particular in this repository is possible to:
 
 - Load different types of files [pdf,txt,word,doc,html,docx] to be retrieved (use --file_path to specify the path within the files and modify accepted files variable to filter)
 - Load different urls to be retrieved (variable inside code).
-- Choose a model family(--model ),for now supported open ai,groq and claude models,specify the api keys in api_key.env file.
+- Choose a model family(--model ),for now supported open ai,groq,claude and google models,specify the api keys in api_key.env file.
 - Choose a specific model (--model_name) fo the model family chosen.
 - Choose if summarize everything using the chosen model using --pre_summarize.
-- Choose an embedding model (--embeddings) hugging face,opeai and fast.
-- Choose the vectorstore (--vectorstore) [qdrant,chroma].
-- Choose a retriever using --retriever between base retriever(vectorstore),parent document retriever and three type of ContextualCompressionRetriever(compressor,extractor,filter).
+- Choose which text splitter use (--splitter) [recursive,semantic].
+- Choose an embedding model (--embeddings) hugging face,opeai,fast and google.
+- Choose the vectorstore (--vectorstore) [qdrant,chroma,google].
+- Choose a retriever using --retriever between base retriever(vectorstore),parent document retriever,multi query retriever and three type of ContextualCompressionRetriever(compressor,extractor,filter).
 - The chatbot is chat history aware,
 
 
