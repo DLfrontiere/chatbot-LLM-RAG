@@ -10,14 +10,13 @@ from gui import GUI
 from dotenv import load_dotenv
 from document_processing import DocumentProcessor
 from pathlib import Path
-from models import OpenAIModel, GroqModel, ClaudeModel
+from models import OpenAIModel, GroqModel, ClaudeModel, GoogleModel
 from vectorstore import VectorStore
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_experimental.text_splitter import SemanticChunker # type: ignore
 from utils import create_or_update_csv,load_object,save_object
 
 load_dotenv(Path("../api_key.env"))
-
     
 def main():
     parser = argparse.ArgumentParser(description="Choose model, embeddings, retriever, and other options.")
@@ -35,6 +34,9 @@ def main():
         default_model_name = 'claude-3-sonnet-20240229'
     elif known_args.model == 'google':
         default_model_name = 'gemini-1.5-flash'
+    else:
+        raise ValueError("Unsupported model type. Supported types: 'openai', 'groq', 'claude', 'google'.")
+
     
     
     # Add remaining arguments and set the default value for model_name based on known_args
@@ -44,13 +46,14 @@ def main():
     parser.add_argument('--pre_summarize', action='store_true', default=False, help="Whether to pre-summarize the documents (default: False).")
     parser.add_argument('--vectorstore', choices=['chroma', 'qdrant','google'], default='qdrant', help="Choose the vector store to use (default: qdrant).")
     parser.add_argument('--model_name', type=str, default=default_model_name, help="Model name based on the chosen model.")
+    parser.add_argument('--splitter', choices=['recursive', 'semantic'], default='recursive', help="Choose the text splitter to use (default: recursive).")
 
     # Parse all args including the remaining args
     args = parser.parse_args(remaining_args)
     args.model = known_args.model
 
     files_path = args.files_path
-    accepted_files = ["pdf", "txt", "html","docx","doc"]
+    filter_files = ["pdf", "txt", "html","docx","doc"]
     urls = ["https://ainews.it/synthesia-creazione-di-avatar-ai-anche-da-mobile/"]
 
 
@@ -58,47 +61,21 @@ def main():
     model_name = args.model_name
     if args.model == 'openai':
         model = OpenAIModel(model_name=model_name)
-        llm = model.get_model()
-
     elif args.model == 'groq':
         model = GroqModel(model_name=model_name)
-        llm = model.get_model()
-
     elif args.model == 'claude':
         model = ClaudeModel(model_name=model_name)
-        llm = model.get_model()
-
-    #company_path = "../ALL_FILES/COMPANY"
-    #user_path = "../ALL_FILES/USERS/User1"
-    #files_paths = [company_path,user_path]
-    #loader = Loader(files_path)
-    #docs_urls = loader.load_urls(urls)
-    #docs = loader.load_documents(accepted_files)
-    #docs.extend(docs_urls)
-
-
-    ###
-    # Define file paths for saved objects
-    docs_file = f"./docs_{os.path.basename(files_path)}.pkl"
-    ###
-
-    ###
-    # Time the docs loading section
-    if os.path.exists(docs_file):
-        start_docs_time = time.time()
-        docs = load_object(docs_file)
-        end_docs_time = time.time()
-        print(f"Loaded saved docs in {round(end_docs_time - start_docs_time, 3)} seconds")
+    elif args.model == 'google':
+        model = GoogleModel(model_name=model_name)
     else:
-        start_docs_time = time.time()
-        loader = Loader(files_path)
-        docs_urls = loader.load_urls(urls)
-        docs = loader.load_documents(accepted_files)
-        docs.extend(docs_urls)
-        end_docs_time = time.time()
-        save_object(docs, docs_file)
-        print(f"Time taken to create docs: {round(end_docs_time - start_docs_time, 3)} seconds")
-    ###
+        raise ValueError("Unsupported model type. Supported types: 'openai', 'groq', 'claude', 'google'.")
+    
+    llm = model.get_model()
+
+    loader = Loader(files_path)
+    docs_urls = loader.load_urls(urls)
+    docs = loader.load_documents(filter_files)
+    docs.extend(docs_urls)
 
 
     # Optionally pre-summarize documents
@@ -118,17 +95,27 @@ def main():
         embedding_function = embedding_model.fast_embed_embeddings()
     elif arg_embedding == 'google':
         embedding_function = embedding_model.google_embeddings()
-    
+    else:
+        raise ValueError("Unsupported embeddings type. Supported types: 'openai', 'hugging', 'fast', 'google'.")
 
-    #base_splitter = RecursiveCharacterTextSplitter(chunk_size=200, chunk_overlap=20, add_start_index=True)
-    base_splitter = SemanticChunker(embedding_function)
-    child_splitter = base_splitter
+    
+    #choose splitter
+    arg_splitter = args.splitter
+
+    if arg_splitter == "recursive":
+        base_splitter = RecursiveCharacterTextSplitter(chunk_size=200, chunk_overlap=20, add_start_index=True)
+    elif arg_splitter == "semantic":
+        base_splitter = SemanticChunker(embedding_function)
+
+    child_splitter = RecursiveCharacterTextSplitter(chunk_size=200, chunk_overlap=20, add_start_index=True)
     parent_splitter =  RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=80, add_start_index=True)
 
     chunks = base_splitter.split_documents(docs)
     
+
+    #choose vectorstore
     vector_store_chunks = VectorStore(chunks)
-    vector_store_docs = VectorStore(docs)
+    vector_store_docs = VectorStore(docs) #to use for parent retriever
 
     if args.vectorstore.lower() == "chroma":
         vectorstore_chunks = vector_store_chunks.get_chroma_vectorstore(embedding_function)
@@ -147,10 +134,10 @@ def main():
     if args.retriever == 'base':
         chosen_retriever = BaseRetriever(vectorstore_chunks).get_retriever()
     elif args.retriever == 'parent':
-        chosen_retriever = ParentRetriever(docs, vectorstore_docs,parent_splitter,child_splitter).get_retriever()
+        chosen_retriever = ParentRetriever(docs, vectorstore_docs, parent_splitter, child_splitter).get_retriever()
     elif args.retriever == 'multi_query':
         base_retriever = BaseRetriever(vectorstore_chunks).get_retriever()
-        chosen_retriever = MultiQueryDataRetriever(base_retriever,llm).get_retriever()
+        chosen_retriever = MultiQueryDataRetriever(base_retriever, llm).get_retriever()
     elif args.retriever == 'compression_extractor':
         base_retriever = BaseRetriever(vectorstore_chunks).get_retriever()
         chosen_retriever = CompressionExtractorRetriever(base_retriever, llm).get_retriever()
@@ -159,11 +146,18 @@ def main():
         chosen_retriever = CompressionFilterRetriever(base_retriever, llm).get_retriever()
     elif args.retriever == 'compression_embedding':
         base_retriever = BaseRetriever(vectorstore_chunks).get_retriever()
-        chosen_retriever = CompressionEmbeddingRetriever(base_retriever,embedding_function=embedding_function).get_retriever()
+        chosen_retriever = CompressionEmbeddingRetriever(base_retriever, embedding_function=embedding_function).get_retriever()
+    else:
+        raise ValueError("Unsupported retriever type. Supported types: 'base', 'parent', 'multi_query', 'compression_extractor', 'compression_filter', 'compression_embedding'.")
+
 
     answer_generator = AnswerGenerator(retriever= chosen_retriever,model = llm)
 
+    #delete the comment to generate a link to chat with the LLM-RAG
     #GUI(answer_generator)
+
+    #use prompts and grountruths to automatically generate a csv with
+    #prompt,answer,inference time,context and others info
 
     prompts = ["what is nvidia culitho?","what's the washing machine name?","how much is claude 3.5 sonnet plan?","why Nvidia don't use org-charts?","what not to do to move the washing machine?","what's the next step in the broader vision of Claude.ai?"]
     groundthruts = ["NVIDIA cuLitho,a new library that supercharges computational lithography, an immensec omputational workload in chip design and manufacturing.","the washing machine name is Dyson Contrarotator","Claude 3.5 Sonnet is now available for free on Claude.ai and the Claude iOS app, while Claude Pro and Team plan subscribers can access it with significantly higher rate limits. It is also available via the Anthropic API, Amazon Bedrock, and Google Cloud’s Vertex AI. The model costs $3 per million input tokens and $15 per million output tokens, with a 200K token context window.","Nvidia doesn't use org-charts because they believe the mission is the boss","Do not push the washing machine with your foot","Claude.ai next step is to expand to support team collaboration"]
@@ -177,7 +171,7 @@ def main():
         answer = answer_generator.answer_prompt(prompt)
         answer_time = round ( time.time() - start_time , 3)  # Calculate answer time
         create_or_update_csv(prompt, answer,groundtruth, context,answer_time, model_name, args.embeddings, args.retriever, args.pre_summarize, args.vectorstore, csv_file="./model_test.csv")
-        #print("chatbot: ",answer)
+        #print("chatbot answer: ",answer)
 
 
     

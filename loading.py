@@ -23,9 +23,9 @@ class Loader:
         doc.page_content = s.lower()
         return doc       
 
-    def load_documents(self, accepted_files: List[str]):
+    def load_documents(self, accepted_files: List[str] = None):
         # Use a list of patterns to match specific file types
-        patterns = ["**/*." + f for f in accepted_files]
+        patterns = ["**/*." + f for f in accepted_files] if accepted_files else ["**/*"]
         all_docs = []
 
         for directory in self.file_directory:
