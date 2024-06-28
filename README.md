@@ -11,19 +11,19 @@ An example of chat bot LLM-RAG architecture:
 In particular in this repository is possible to:
 
 - Load different types of files [pdf,txt,word,doc,html,docx] to be retrieved (use --file_path to specify the path within the files and modify accepted files variable to filter)
-- Load different urls to be retrieved (variable inside code)
-- Choose a model (--model ),for now supported open ai,groq and claude models,specify the api keys in api_key.env file
-- Choose if summarize everything using the chosen model using --pre_summarize
+- Load different urls to be retrieved (variable inside code).
+- Choose a model family(--model ),for now supported open ai,groq and claude models,specify the api keys in api_key.env file.
+- Choose a specific model (--model_name) fo the model family chosen.
+- Choose if summarize everything using the chosen model using --pre_summarize.
 - Choose an embedding model --embeddings hugging face,opeai and fast
-- Chroma is used for vector storing //
-  
-- Choose a retriever using --retriever between base retreiever,parent document retriever and three type of ContextualCompressionRetriever(compressor,extractor,filter)
+- Choose the vectorstore (--vectorstore) [qdrant,chroma].
+- Choose a retriever using --retriever between base retriever(vectorstore),parent document retriever and three type of ContextualCompressionRetriever(compressor,extractor,filter)
 - The chatbot is chat history aware
 
 
 # Usage  Example
 
-python3 main.py --model openai --embeddings fast --retriever parent --files_path ./your_files_dir --pre_summarize False
+python3 main.py --model openai --model_name gpt-4o --embeddings fast --retriever parent --files_path ./your_files_dir --pre_summarize False --vectorstore qdrant
 
 A link will be generated to use a gui to interact wiht the chatbot
 
