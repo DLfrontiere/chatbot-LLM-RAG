@@ -33,7 +33,8 @@ The only one with no defualt value is file_path
 python3 main.py --file_path your/path/to/files
 ```
 
-You can uncomment the code line ```python 
+You can uncomment the code line 
+```python 
 #GUI(answer_generator) 
 ```
 In this way at the end of run a link will be generated to use a gui to interact wiht the chatbot using the GUI(answer_generator).
