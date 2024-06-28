@@ -23,13 +23,13 @@ In particular in this repository is possible to:
 
 
 # Usage  Example
-
+'''python
 python3 main.py --model openai --model_name gpt-4o --embeddings fast --retriever parent --files_path ./your_files_dir --pre_summarize False --vectorstore qdrant --splitter semantic
-
+'''
 The only one with no defualt value is file_path
-
+'''python
 python3 main.py --file_path your/path/to/files
-
+'''
 A link will be generated to use a gui to interact wiht the chatbot using GUI(answer_generator).
 
 
