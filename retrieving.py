@@ -2,11 +2,9 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.embeddings.sentence_transformer import SentenceTransformerEmbeddings
 from langchain.retrievers import ParentDocumentRetriever, ContextualCompressionRetriever
 from langchain.retrievers.document_compressors import LLMChainExtractor, EmbeddingsFilter
-from langchain_chroma import Chroma
 from langchain.storage import InMemoryStore
 from langchain.retrievers.document_compressors import LLMChainFilter
-from langchain_qdrant import Qdrant
-
+from langchain.retrievers.multi_query import MultiQueryRetriever
 
 #check compliance between base retriever and compression retrievers
 class BaseRetriever:
@@ -39,6 +37,22 @@ class ParentRetriever:
         retriever.add_documents(docs)
         return retriever
 
+class MultiQueryDataRetriever(BaseRetriever):
+
+    def __init__(self, base_retriever,model):
+        self.base_retriever = base_retriever
+        self.model = model
+
+    def get_multi_retriever(self):
+        llm = self.model
+        self.retriever = MultiQueryRetriever.from_llm(
+            retriever=self.base_retriever, llm=llm
+        )
+        return self.retriever
+    
+    def get_retriever(self):
+        return self.get_multi_retriever()
+    
 class CompressionExtractorRetriever:
 
     def __init__(self, base_retriever,model):

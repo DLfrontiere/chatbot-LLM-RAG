@@ -4,7 +4,7 @@ import os
 import time
 from loading import Loader
 from embedding import EmbeddingModel
-from retrieving import BaseRetriever, ParentRetriever, CompressionExtractorRetriever, CompressionFilterRetriever, CompressionEmbeddingRetriever
+from retrieving import BaseRetriever, ParentRetriever,MultiQueryDataRetriever,CompressionExtractorRetriever, CompressionFilterRetriever, CompressionEmbeddingRetriever
 from answer_generation import AnswerGenerator
 from gui import GUI
 from dotenv import load_dotenv
@@ -13,6 +13,7 @@ from pathlib import Path
 from models import OpenAIModel, GroqModel, ClaudeModel
 from vectorstore import VectorStore
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_experimental.text_splitter import SemanticChunker # type: ignore
 from utils import create_or_update_csv,load_object,save_object
 
 load_dotenv(Path("../api_key.env"))
@@ -20,7 +21,7 @@ load_dotenv(Path("../api_key.env"))
     
 def main():
     parser = argparse.ArgumentParser(description="Choose model, embeddings, retriever, and other options.")
-    parser.add_argument('--model', choices=['openai', 'groq', 'claude'], default='claude', help="Choose the model to use (default: openai).")
+    parser.add_argument('--model', choices=['openai', 'groq', 'claude','google'], default='openai', help="Choose the model to use (default: openai).")
     
     # Parse known args first to determine the model
     known_args, remaining_args = parser.parse_known_args()
@@ -32,14 +33,16 @@ def main():
         default_model_name = 'llama3-70b-8192'
     elif known_args.model == 'claude':
         default_model_name = 'claude-3-sonnet-20240229'
-
+    elif known_args.model == 'google':
+        default_model_name = 'gemini-1.5-flash'
+    
     
     # Add remaining arguments and set the default value for model_name based on known_args
-    parser.add_argument('--embeddings', choices=['openai', 'hugging', 'fast'], default='fast', help="Choose the embeddings to use.")
-    parser.add_argument('--retriever', choices=['base', 'parent', 'comp_extract', 'comp_filter', 'comp_emb'], default='parent', help="Choose the retriever to use.")
+    parser.add_argument('--embeddings', choices=['openai', 'hugging', 'fast','google'], default='fast', help="Choose the embeddings to use.")
+    parser.add_argument('--retriever', choices=['base', 'parent', 'multi_query','compression_extractor', 'compression_filter', 'compression_embedding'], default='parent', help="Choose the retriever to use.")
     parser.add_argument('--files_path', type=str, required=True, help="Path to the directory containing files to be retrieved.")
     parser.add_argument('--pre_summarize', action='store_true', default=False, help="Whether to pre-summarize the documents (default: False).")
-    parser.add_argument('--vectorstore', choices=['chroma', 'qdrant'], default='qdrant', help="Choose the vector store to use (default: qdrant).")
+    parser.add_argument('--vectorstore', choices=['chroma', 'qdrant','google'], default='qdrant', help="Choose the vector store to use (default: qdrant).")
     parser.add_argument('--model_name', type=str, default=default_model_name, help="Model name based on the chosen model.")
 
     # Parse all args including the remaining args
@@ -77,8 +80,6 @@ def main():
     ###
     # Define file paths for saved objects
     docs_file = f"./docs_{os.path.basename(files_path)}.pkl"
-    vectorstore_chunks_file = f"./{args.vectorstore}_chunks_{args.embeddings}.pkl"
-    vectorstore_docs_file = f"./{args.vectorstore}_docs_{args.embeddings}.pkl"
     ###
 
     ###
@@ -104,33 +105,42 @@ def main():
     if args.pre_summarize:
         doc_processing = DocumentProcessor(docs, llm)
         docs = doc_processing.summarize_docs(docs)
-    print(llm)
+
     embedding_model = EmbeddingModel(docs)
 
-    print(llm)
     # Choose embedding function
-    if args.embeddings == 'openai':
+    arg_embedding = args.embeddings 
+    if arg_embedding == 'openai':
         embedding_function = embedding_model.open_ai_embeddings()
-    elif args.embeddings == 'hugging':
+    elif arg_embedding == 'hugging':
         embedding_function = embedding_model.hugging_face_bge_embeddings()
-    elif args.embeddings == 'fast':
+    elif arg_embedding == 'fast':
         embedding_function = embedding_model.fast_embed_embeddings()
-    print(llm)
+    elif arg_embedding == 'google':
+        embedding_function = embedding_model.google_embeddings()
+    
 
-    base_splitter = RecursiveCharacterTextSplitter(chunk_size=200, chunk_overlap=20, add_start_index=True)
-    parent_splitter =  RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=80, add_start_index=True)
+    #base_splitter = RecursiveCharacterTextSplitter(chunk_size=200, chunk_overlap=20, add_start_index=True)
+    base_splitter = SemanticChunker(embedding_function)
     child_splitter = base_splitter
+    parent_splitter =  RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=80, add_start_index=True)
+
     chunks = base_splitter.split_documents(docs)
     
     vector_store_chunks = VectorStore(chunks)
-    vector_store_chunks.create_vector_store(args.vectorstore, embedding_function)
-    vectorstore_chunks = vector_store_chunks.get_vector_store()
-
-
     vector_store_docs = VectorStore(docs)
-    vector_store_docs.create_vector_store(args.vectorstore, embedding_function)
-    vectorstore_docs = vector_store_docs.get_vector_store()
 
+    if args.vectorstore.lower() == "chroma":
+        vectorstore_chunks = vector_store_chunks.get_chroma_vectorstore(embedding_function)
+        vectorstore_docs = vector_store_docs.get_chroma_vectorstore(embedding_function)
+    elif args.vectorstore.lower() == "qdrant":
+        vectorstore_chunks = vector_store_chunks.get_qdrant_vectorstore(embedding_function)
+        vectorstore_docs = vector_store_docs.get_qdrant_vectorstore(embedding_function)
+    elif args.vectorstore.lower() == "google":
+        vectorstore_chunks = vector_store_chunks.get_google_vectorstore(embedding_function)
+        vectorstore_docs = vector_store_docs.get_google_vectorstore(embedding_function)
+    else:
+        raise ValueError("Unsupported vector store type. Supported types: 'chroma', 'qdrant', 'google'.")
 
 
     # Choose retriever
@@ -138,13 +148,16 @@ def main():
         chosen_retriever = BaseRetriever(vectorstore_chunks).get_retriever()
     elif args.retriever == 'parent':
         chosen_retriever = ParentRetriever(docs, vectorstore_docs,parent_splitter,child_splitter).get_retriever()
-    elif args.retriever == 'comp_extract':
+    elif args.retriever == 'multi_query':
+        base_retriever = BaseRetriever(vectorstore_chunks).get_retriever()
+        chosen_retriever = MultiQueryDataRetriever(base_retriever,llm).get_retriever()
+    elif args.retriever == 'compression_extractor':
         base_retriever = BaseRetriever(vectorstore_chunks).get_retriever()
         chosen_retriever = CompressionExtractorRetriever(base_retriever, llm).get_retriever()
-    elif args.retriever == 'comp_filter':
+    elif args.retriever == 'compression_filter':
         base_retriever = BaseRetriever(vectorstore_chunks).get_retriever()
         chosen_retriever = CompressionFilterRetriever(base_retriever, llm).get_retriever()
-    elif args.retriever == 'comp_emb':
+    elif args.retriever == 'compression_embedding':
         base_retriever = BaseRetriever(vectorstore_chunks).get_retriever()
         chosen_retriever = CompressionEmbeddingRetriever(base_retriever,embedding_function=embedding_function).get_retriever()
 

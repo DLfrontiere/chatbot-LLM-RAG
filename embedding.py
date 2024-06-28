@@ -1,6 +1,7 @@
 from langchain_community.embeddings import HuggingFaceBgeEmbeddings
 from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
 from langchain_openai import OpenAIEmbeddings
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
 class EmbeddingModel:
     def __init__(self, docs, embedding_model_name="BAAI/bge-small-en"):
@@ -22,5 +23,9 @@ class EmbeddingModel:
         return embeddings
 
     def open_ai_embeddings(self, model_name="text-embedding-ada-002"):
-        openai = OpenAIEmbeddings(model=model_name)
-        return openai
+        embeddings = OpenAIEmbeddings(model=model_name)
+        return embeddings
+    
+    def google_embeddings(self,model_name = "models/embedding-001"):
+        embeddings = GoogleGenerativeAIEmbeddings(model=model_name)
+        return embeddings

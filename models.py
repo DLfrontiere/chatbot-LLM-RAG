@@ -3,6 +3,7 @@ import getpass
 from langchain_openai import ChatOpenAI
 from langchain_groq import ChatGroq
 from langchain_anthropic import ChatAnthropic  # Assuming this is the correct import for the Claude model
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 class BaseModel:
 
@@ -62,6 +63,20 @@ class ClaudeModel(BaseModel):
     def initialize_model(self):
         self.model = ChatAnthropic(model=self.model_name, temperature=self.model_temperature, anthropic_api_key=self.api_key)
     
+    def get_model(self):
+        return self.model
+        
+class GoogleModel(BaseModel):
+
+    def __init__(self, model_name= "gemini-1.5-flash", temperature=0):
+        super().__init__(model_name, temperature)
+
+    def api_key_env_name(self,model_name = "gpt-3.5-turbo"):
+        return "GOOGLE_API_KEY"
+
+    def initialize_model(self):
+        self.model = ChatGoogleGenerativeAI(model=self.model_name, temperature=self.model_temperature, google_api_key=self.api_key)
+
     def get_model(self):
         return self.model
 
