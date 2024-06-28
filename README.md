@@ -33,7 +33,12 @@ The only one with no defualt value is file_path
 python3 main.py --file_path your/path/to/files
 ```
 
-A link will be generated to use a gui to interact wiht the chatbot using GUI(answer_generator).
+You can uncomment the code line ```python 
+#GUI(answer_generator) 
+```
+In this way at the end of run a link will be generated to use a gui to interact wiht the chatbot using the GUI(answer_generator).
+
+Otherwise you can write in the prompts list your queries and groundtruths (just for test) and a csv will be generated with queries and answers.
 
 
 
