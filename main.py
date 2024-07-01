@@ -17,7 +17,12 @@ from langchain_experimental.text_splitter import SemanticChunker # type: ignore
 from utils import create_or_update_csv,load_object,save_object
 
 load_dotenv(Path("../api_key.env"))
-    
+  
+def read_prompts_from_docx(file_path):
+    doc = Document(file_path)
+    prompts = [para.text for para in doc.paragraphs if para.text.strip()]
+    return prompts
+      
 def main():
     parser = argparse.ArgumentParser(description="Choose model, embeddings, retriever, and other options.")
     parser.add_argument('--model', choices=['openai', 'groq', 'claude','google'], default='openai', help="Choose the model to use (default: openai).")
@@ -46,7 +51,7 @@ def main():
     parser.add_argument('--pre_summarize', action='store_true', default=False, help="Whether to pre-summarize the documents (default: False).")
     parser.add_argument('--vectorstore', choices=['chroma', 'qdrant','google'], default='qdrant', help="Choose the vector store to use (default: qdrant).")
     parser.add_argument('--model_name', type=str, default=default_model_name, help="Model name based on the chosen model.")
-    parser.add_argument('--splitter', choices=['recursive', 'semantic'], default='recursive', help="Choose the text splitter to use (default: recursive).")
+    parser.add_argument('--splitter', choices=['recursive', 'semantic'], default='semantic', help="Choose the text splitter to use (default: recursive).")
 
     # Parse all args including the remaining args
     args = parser.parse_args(remaining_args)
@@ -159,8 +164,12 @@ def main():
     #use prompts and grountruths to automatically generate a csv with
     #prompt,answer,inference time,context and others info
 
-    prompts = ["what is nvidia culitho?","what's the washing machine name?","how much is claude 3.5 sonnet plan?","why Nvidia don't use org-charts?","what not to do to move the washing machine?","what's the next step in the broader vision of Claude.ai?"]
-    groundthruts = ["NVIDIA cuLitho,a new library that supercharges computational lithography, an immensec omputational workload in chip design and manufacturing.","the washing machine name is Dyson Contrarotator","Claude 3.5 Sonnet is now available for free on Claude.ai and the Claude iOS app, while Claude Pro and Team plan subscribers can access it with significantly higher rate limits. It is also available via the Anthropic API, Amazon Bedrock, and Google Cloud’s Vertex AI. The model costs $3 per million input tokens and $15 per million output tokens, with a 200K token context window.","Nvidia doesn't use org-charts because they believe the mission is the boss","Do not push the washing machine with your foot","Claude.ai next step is to expand to support team collaboration"]
+    #prompts = ["what is nvidia culitho?","what's the washing machine name?","how much is claude 3.5 sonnet plan?","why Nvidia don't use org-charts?","what not to do to move the washing machine?","what's the next step in the broader vision of Claude.ai?"]
+    file_path = "../Domande_Chatbot.docx"
+    prompts = read_prompts_from_docx(file_path)
+
+    groundthruts = [" " for p in prompts]#["NVIDIA cuLitho,a new library that supercharges computational lithography, an immensec omputational workload in chip design and manufacturing.","the washing machine name is Dyson Contrarotator","Claude 3.5 Sonnet is now available for free on Claude.ai and the Claude iOS app, while Claude Pro and Team plan subscribers can access it with significantly higher rate limits. It is also available via the Anthropic API, Amazon Bedrock, and Google Cloud’s Vertex AI. The model costs $3 per million input tokens and $15 per million output tokens, with a 200K token context window.","Nvidia doesn't use org-charts because they believe the mission is the boss","Do not push the washing machine with your foot","Claude.ai next step is to expand to support team collaboration"]
+    
 
 	    
     for i,prompt in enumerate(prompts):

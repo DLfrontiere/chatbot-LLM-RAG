@@ -8,7 +8,7 @@ An example of chat bot LLM-RAG architecture:
 
 ![alt text](https://github.com/DLfrontiere/chatbot-LLM-RAG/blob/main/images/rag-chatbot-architecture-1.png?raw=true)
 
-In particular in this repository is possible to:
+In particular in main.py is possible to load the following args:
 
 - Load different types of files [pdf,txt,word,doc,html,docx] to be retrieved (use --file_path to specify the path within the files and modify accepted files variable to filter)
 - Load different urls to be retrieved (variable inside code).
