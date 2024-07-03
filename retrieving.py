@@ -6,6 +6,9 @@ from langchain.storage import InMemoryStore
 from langchain.retrievers.document_compressors import LLMChainFilter
 from langchain.retrievers.multi_query import MultiQueryRetriever
 
+
+from langchain.chains.query_constructor.base import AttributeInfo
+from langchain.retrievers.self_query.base import SelfQueryRetriever
 #check compliance between base retriever and compression retrievers
 class BaseRetriever:
 
@@ -105,3 +108,35 @@ class CompressionEmbeddingRetriever:
         return self.get_compression_embedding_retriever()
 
 
+class QueryRetriever:
+
+    def __init__(self, vectorstore, model):
+        self.vectorstore = vectorstore
+        self.model = model
+
+    def set_metadata_info(self):
+        metadata_field_info = [
+     AttributeInfo(
+        name="Personal",
+        description="the ownership of a document. One of ['mio', 'mia' , 'il mio', 'la mia', 'nella mia', 'della mia']",
+        type="string",
+    ),
+    ]
+        return metadata_field_info
+
+    def get_retriever(self):
+        metadata_field_info=self.set_metadata_info
+        document_content_description = "collection of personal document"
+    
+        retriever = SelfQueryRetriever.from_llm(
+            self.model,
+            self.vectorstore,
+            document_content_description,
+            metadata_field_info,
+            verbose = True,
+        )
+
+        return retriever
+        
+
+    

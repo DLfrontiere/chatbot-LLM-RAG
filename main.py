@@ -4,7 +4,7 @@ import os
 import time
 from loading import Loader
 from embedding import EmbeddingModel
-from retrieving import BaseRetriever, ParentRetriever,MultiQueryDataRetriever,CompressionExtractorRetriever, CompressionFilterRetriever, CompressionEmbeddingRetriever
+from retrieving import BaseRetriever, ParentRetriever,MultiQueryDataRetriever,CompressionExtractorRetriever, CompressionFilterRetriever, CompressionEmbeddingRetriever , QueryRetriever
 from answer_generation import AnswerGenerator
 from gui import GUI
 from dotenv import load_dotenv
@@ -15,6 +15,8 @@ from vectorstore import VectorStore
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_experimental.text_splitter import SemanticChunker # type: ignore
 from utils import create_or_update_csv,load_object,save_object
+from docx import Document
+import pickle
 
 load_dotenv(Path("../api_key.env"))
     
@@ -41,8 +43,9 @@ def main():
     
     # Add remaining arguments and set the default value for model_name based on known_args
     parser.add_argument('--embeddings', choices=['openai', 'hugging', 'fast','google'], default='fast', help="Choose the embeddings to use.")
-    parser.add_argument('--retriever', choices=['base', 'parent', 'multi_query','compression_extractor', 'compression_filter', 'compression_embedding'], default='parent', help="Choose the retriever to use.")
+    parser.add_argument('--retriever', choices=['base', 'parent', 'multi_query','compression_extractor', 'compression_filter', 'compression_embedding', 'self_query'], default='parent', help="Choose the retriever to use.")
     parser.add_argument('--files_path', type=str, required=True, help="Path to the directory containing files to be retrieved.")
+    parser.add_argument('--files_personal_path', type=str, required=True, help="Path to the directory containing personal files to be retrieved.")
     parser.add_argument('--pre_summarize', action='store_true', default=False, help="Whether to pre-summarize the documents (default: False).")
     parser.add_argument('--vectorstore', choices=['chroma', 'qdrant','google'], default='qdrant', help="Choose the vector store to use (default: qdrant).")
     parser.add_argument('--model_name', type=str, default=default_model_name, help="Model name based on the chosen model.")
@@ -53,6 +56,7 @@ def main():
     args.model = known_args.model
 
     files_path = args.files_path
+    files_personal_path = args.files_personal_path
     filter_files = ["pdf", "txt", "html","docx","doc"]
     urls = ["https://ainews.it/synthesia-creazione-di-avatar-ai-anche-da-mobile/"]
 
@@ -71,11 +75,22 @@ def main():
         raise ValueError("Unsupported model type. Supported types: 'openai', 'groq', 'claude', 'google'.")
     
     llm = model.get_model()
+    if os.path.exists("/home/user/Scrivania/Progetti_Frontiere/chatbot-LLM-RAG/loaded_doc.pkl"):
+        docs = load_object("loaded_doc.pkl")
+    else:
+        #Load documentation files
+        loader = Loader(files_path)
+        docs_urls = loader.load_urls(urls)
+        docs = loader.load_documents(filter_files)
+        docs.extend(docs_urls)
 
-    loader = Loader(files_path)
-    docs_urls = loader.load_urls(urls)
-    docs = loader.load_documents(filter_files)
-    docs.extend(docs_urls)
+        #Load personal files
+        loader_personal = Loader(files_personal_path)
+        docs.extend(loader_personal.load_personal_documents(filter_files))
+
+        print(docs)
+
+        save_object(docs, "loaded_doc.pkl")
 
 
     # Optionally pre-summarize documents
@@ -147,10 +162,11 @@ def main():
     elif args.retriever == 'compression_embedding':
         base_retriever = BaseRetriever(vectorstore_chunks).get_retriever()
         chosen_retriever = CompressionEmbeddingRetriever(base_retriever, embedding_function=embedding_function).get_retriever()
+    elif args.retriever == 'self_query':
+        chosen_retriever = QueryRetriever(vectorstore= vectorstore_chunks, model = llm).get_retriever()
     else:
         raise ValueError("Unsupported retriever type. Supported types: 'base', 'parent', 'multi_query', 'compression_extractor', 'compression_filter', 'compression_embedding'.")
-
-
+    print("sono qyu")
     answer_generator = AnswerGenerator(retriever= chosen_retriever,model = llm)
 
     #delete the comment to generate a link to chat with the LLM-RAG
@@ -159,19 +175,22 @@ def main():
     #use prompts and grountruths to automatically generate a csv with
     #prompt,answer,inference time,context and others info
 
-    prompts = ["what is nvidia culitho?","what's the washing machine name?","how much is claude 3.5 sonnet plan?","why Nvidia don't use org-charts?","what not to do to move the washing machine?","what's the next step in the broader vision of Claude.ai?"]
-    groundthruts = ["NVIDIA cuLitho,a new library that supercharges computational lithography, an immensec omputational workload in chip design and manufacturing.","the washing machine name is Dyson Contrarotator","Claude 3.5 Sonnet is now available for free on Claude.ai and the Claude iOS app, while Claude Pro and Team plan subscribers can access it with significantly higher rate limits. It is also available via the Anthropic API, Amazon Bedrock, and Google Cloud’s Vertex AI. The model costs $3 per million input tokens and $15 per million output tokens, with a 200K token context window.","Nvidia doesn't use org-charts because they believe the mission is the boss","Do not push the washing machine with your foot","Claude.ai next step is to expand to support team collaboration"]
+    #doc = Document ('/home/user/Scrivania/Progetti_Frontiere/chatbot-LLM-RAG/Domande_Chatbot.docx')
+    #prompts =[para.text for para in doc.paragraphs if para.text.strip()]
+    
+    prompts = ["Quali sono garanzie comprese nella mia polizza?"]
+    #groundthruts = ["NVIDIA cuLitho,a new library that supercharges computational lithography, an immensec omputational workload in chip design and manufacturing.","the washing machine name is Dyson Contrarotator","Claude 3.5 Sonnet is now available for free on Claude.ai and the Claude iOS app, while Claude Pro and Team plan subscribers can access it with significantly higher rate limits. It is also available via the Anthropic API, Amazon Bedrock, and Google Cloud’s Vertex AI. The model costs $3 per million input tokens and $15 per million output tokens, with a 200K token context window.","Nvidia doesn't use org-charts because they believe the mission is the boss","Do not push the washing machine with your foot","Claude.ai next step is to expand to support team collaboration"]
 
 	    
     for i,prompt in enumerate(prompts):
-        #print("Answering: ",prompt)
-        groundtruth = groundthruts[i]
+        print("Answering: ",prompt)
+        #groundtruth = groundthruts[i]
         context = answer_generator.get_current_context(prompt)
         start_time = time.time()  # Start the timer
         answer = answer_generator.answer_prompt(prompt)
         answer_time = round ( time.time() - start_time , 3)  # Calculate answer time
-        create_or_update_csv(prompt, answer,groundtruth, context,answer_time, model_name, args.embeddings, args.retriever, args.pre_summarize, args.vectorstore, csv_file="./model_test.csv")
-        #print("chatbot answer: ",answer)
+        create_or_update_csv(prompt, answer, context,answer_time, model_name, args.embeddings, args.retriever, args.pre_summarize, args.vectorstore, csv_file="./model_test.csv")
+        print("chatbot answer: ",answer)
 
 
     
