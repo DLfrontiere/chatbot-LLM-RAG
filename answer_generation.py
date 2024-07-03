@@ -27,13 +27,17 @@ class AnswerGenerator():
 
     def create_rag_chain(self):
         system_prompt = (
-            "You are an assistant for question-answering tasks. "
-            "Use the following pieces of retrieved context to answer "
-            "the question. If you don't know the answer, say that you "
-            "don't know. Use three sentences maximum and keep the "
-            "answer concise."
-            "\n\n"
-            "Context:"
+            "Sei un assistente chatbot per una compagnia di assicurazioni (Yolo-insurance). "
+            "Usa i seguenti pezzi di contesto recuperato per rispondere "
+            "alla domanda. Quando citi la nostra compagnia di assicurazione parla in "
+            "prima personale plurale (e.g contatta la nostra assistenza clienti)."
+            "Non citare mai che hai usato il contesto"
+            " o documenti nella risposta "
+            " e non citare mai riferimenti ad altre compagnie assicurative."
+            "Se non conosci la risposta o non trovi "
+            "la risposta nel contesto,scusati e rispondi semplicemnte di contattare l'assistenza"
+            "\n"
+            "Contesto:"
             "{context}"
         )
 
@@ -48,12 +52,12 @@ class AnswerGenerator():
         question_answer_chain = create_stuff_documents_chain(self.model, qa_prompt)
 
         contextualize_q_system_prompt = (
-            "Given a chat history and the latest user question "
-            "which might reference context in the chat history, "
-            "formulate a standalone question which can be understood "
-            "without the chat history. Do NOT answer the question, "
-            "just reformulate it if needed and otherwise return it as is."
-        )
+        "Data una cronologia della chat e l'ultima domanda dell'utente,"
+        "che potrebbe fare riferimento al contesto nella cronologia della chat, "
+        "formulare una domanda autonoma che possa essere compresa "
+        "senza la cronologia della chat. NON rispondere alla domanda, "
+        "riformularla se necessario e altrimenti restituirla così com'è."
+    )
 
         contextualize_q_prompt = ChatPromptTemplate.from_messages(
             [

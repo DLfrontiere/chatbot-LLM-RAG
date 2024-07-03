@@ -1,6 +1,12 @@
 import os
 import pandas as pd
 import pickle
+from docx import Document
+
+def read_prompts_from_docx(file_path):
+    doc = Document(file_path)
+    prompts = [para.text for para in doc.paragraphs if para.text.strip()]
+    return prompts
 
 def create_or_update_csv(prompt, answer,groundtruth,context, answer_time, model_name, embeddings, retriever, pre_summarize, vectorstore, csv_file="./chat_history.csv"):
     # Check if the CSV file exists
